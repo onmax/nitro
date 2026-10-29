@@ -72,6 +72,9 @@ function getNoExternals(nitro: Nitro): RegExp[] {
   const noExternal: RegExp[] = [
     /\.[mc]?tsx?$/,
     /^(?:[\0#~.]|virtual:)/,
+    // Nitro's own imports (`nitro`, `nitro/*`) by id, so the `nitro:externals` filter skips
+    // them without resolving each one in JS
+    /^nitro(?:\/|$)/,
     new RegExp("^" + pathRegExp(pkgDir) + "(?!.*node_modules)"),
     ...[
       nitro.options.rootDir,
