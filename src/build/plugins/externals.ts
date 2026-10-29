@@ -255,33 +255,37 @@ export function externals(opts: ExternalsOptions): Plugin {
         );
       },
     },
-    renderChunk(code, chunk, outputOpts) {
-      if (tracedIds.size === 0 || !code.includes(TRACED_ID_PREFIX)) {
-        return;
-      }
-      const outDir = outputOpts.dir || (opts.trace && opts.trace.outDir) || opts.rootDir;
-      const s = new MagicString(code);
-      for (const match of code.matchAll(TRACED_ID_RE)) {
-        const traced = tracedIds.get(match[0]);
-        if (!traced) {
-          continue;
+    renderChunk: {
+      // Rolldown skips the other chunks without a call into JS (Rollup ignores the filter)
+      filter: { code: TRACED_ID_PREFIX },
+      handler(code, chunk, outputOpts) {
+        if (tracedIds.size === 0 || !code.includes(TRACED_ID_PREFIX)) {
+          return;
         }
-        s.update(
-          match.index,
-          match.index + match[0].length,
-          renderTracedId(traced, { layout: tracedLayout, outDir, fileName: chunk.fileName })
-        );
-      }
-      if (!s.hasChanged()) {
-        return;
-      }
-      return {
-        code: s.toString(),
-        map: outputOpts.sourcemap
-          ? s.generateMap({ hires: true, source: chunk.fileName }).toString()
-          : undefined,
-      };
-    },
+        const outDir = outputOpts.dir || (opts.trace && opts.trace.outDir) || opts.rootDir;
+        const s = new MagicString(code);
+        for (const match of code.matchAll(TRACED_ID_RE)) {
+          const traced = tracedIds.get(match[0]);
+          if (!traced) {
+            continue;
+          }
+          s.update(
+            match.index,
+            match.index + match[0].length,
+            renderTracedId(traced, { layout: tracedLayout, outDir, fileName: chunk.fileName })
+          );
+        }
+        if (!s.hasChanged()) {
+          return;
+        }
+        return {
+          code: s.toString(),
+          map: outputOpts.sourcemap
+            ? s.generateMap({ hires: true, source: chunk.fileName }).toString()
+            : undefined,
+        };
+      },
+    } as Plugin["renderChunk"],
   };
 }
 
