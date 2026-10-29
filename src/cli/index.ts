@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import "./_compile-cache.ts";
 import { defineCommand, runMain } from "citty";
 import { version as nitroVersion } from "#nitro/meta";
 import { showUsage } from "./_usage.ts";
