@@ -17,7 +17,7 @@ import { extractLinks, formatPrerenderRoute, matchesIgnorePattern } from "./util
 import { getPrerenderMeta } from "./_meta.ts";
 import { scanUnprefixedPublicAssets } from "../build/assets.ts";
 import { toRequest } from "h3";
-import { EnvServer } from "env-runner";
+import type { EnvServer } from "env-runner";
 
 const JsonSigRx = /^\s*["[{]|^\s*-?\d{1,16}(\.\d{1,17})?([Ee][+-]?\d+)?\s*$/; // From unjs/destr
 
@@ -453,6 +453,8 @@ async function createPrerenderer(nitroRenderer: Nitro): Promise<EnvServer> {
       : "index.mjs";
   const serverEntrypoint = resolve(nitroRenderer.options.output.serverDir, serverFilename);
 
+  // Loaded on demand: most builds have no routes to prerender
+  const { EnvServer } = await import("env-runner");
   return new EnvServer({
     runner: "node-worker",
     entry: serverEntrypoint,
