@@ -2,6 +2,9 @@ import type { NitroPluginContext } from "./types.ts";
 import type { Plugin as VitePlugin } from "vite";
 import { resolve } from "pathe";
 
+// Lets a later build that skips the service (`isBuilt`) find its entry.
+export const SERVICE_MANIFEST_FILE = "nitro-service.json";
+
 export function viteServicesTemplate(ctx: NitroPluginContext): string {
   const serviceNames = Object.keys(ctx.services);
 
