@@ -141,6 +141,14 @@ describeIf(supported, "nitro:preset:nitro-dev", async () => {
           expect(spec.info?.description).toBe("Nitro Test Fixture API");
         });
 
+        it("builds the server URL from forwarded headers", async () => {
+          const { data } = await callHandler({
+            url: "/_openapi.json",
+            headers: { "x-forwarded-proto": "https", "x-forwarded-host": "example.com" },
+          });
+          expect(data.servers[0].url).toBe("https://example.com");
+        });
+
         it("defineRouteMeta works", () => {
           expect(spec.paths?.["/api/meta/test"]).toMatchInlineSnapshot(`
             {
