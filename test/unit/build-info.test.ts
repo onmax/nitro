@@ -20,6 +20,7 @@ describe("writeBuildInfo", () => {
   });
 
   afterEach(async () => {
+    vi.unstubAllEnvs();
     await rm(rootDir, { recursive: true, force: true });
   });
 
@@ -57,6 +58,22 @@ describe("writeBuildInfo", () => {
     ]);
     expect(info.serverEntry).toBe("server/index.mjs");
     expect(warn).not.toHaveBeenCalled();
+  });
+
+  it("dates the build with SOURCE_DATE_EPOCH", async () => {
+    vi.stubEnv("SOURCE_DATE_EPOCH", "1700000000");
+    const info = await buildInfoFor([
+      { fileName: "index.mjs", facadeModuleId: join(rootDir, "server.ts") },
+    ]);
+    expect(info.date).toBe("2023-11-14T22:13:20.000Z");
+    expect(info.reproducible).toBe(true);
+
+    for (const epoch of ["2023-11-14", "8640000000001"]) {
+      vi.stubEnv("SOURCE_DATE_EPOCH", epoch);
+      await expect(
+        buildInfoFor([{ fileName: "index.mjs", facadeModuleId: join(rootDir, "server.ts") }])
+      ).rejects.toThrow("Invalid `SOURCE_DATE_EPOCH`");
+    }
   });
 
   it("uses Nitro's entry even when the output name is customized", async () => {

@@ -25,11 +25,16 @@ describe("preview", () => {
     await rm(rootDir, { recursive: true, force: true });
   });
 
-  async function writeBuild(date: Date) {
+  async function writeBuild(date: Date, reproducible?: boolean) {
     await mkdir(join(rootDir, ".output"), { recursive: true });
     await writeFile(
       join(rootDir, ".output/nitro.json"),
-      JSON.stringify({ date: date.toJSON(), preset: "node-server", versions: { nitro: "3" } })
+      JSON.stringify({
+        date: date.toJSON(),
+        reproducible,
+        preset: "node-server",
+        versions: { nitro: "3" },
+      })
     );
   }
 
@@ -66,6 +71,14 @@ describe("preview", () => {
 
   it("does not warn for a build newer than the config", async () => {
     await writeBuild(new Date(Date.now() + 60_000));
+    const warn = vi.spyOn(consola, "warn").mockImplementation(() => {});
+    const preview = await startPreview({ rootDir });
+    await preview.close();
+    expect(warn).not.toHaveBeenCalled();
+  });
+
+  it("does not warn for a build dated by SOURCE_DATE_EPOCH", async () => {
+    await writeBuild(new Date("1980-01-01T00:00:00Z"), true);
     const warn = vi.spyOn(consola, "warn").mockImplementation(() => {});
     const preview = await startPreview({ rootDir });
     await preview.close();

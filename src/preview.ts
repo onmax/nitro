@@ -57,7 +57,8 @@ export async function startPreview(opts: PreviewOptions): Promise<PreviewInstanc
     message: info.map((i) => `- ${i[0]} ${i[1]}`).join("\n"),
   });
 
-  if (buildInfo.date) {
+  // A `SOURCE_DATE_EPOCH` build has no build time to compare with
+  if (buildInfo.date && !buildInfo.reproducible) {
     await warnOutdatedBuild(opts.rootDir, buildInfo.date);
   }
 

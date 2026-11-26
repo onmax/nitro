@@ -4,6 +4,7 @@ import { join, relative, resolve } from "pathe";
 import { version as nitroVersion } from "#nitro/meta";
 import { presetsWithConfig } from "../presets/_types.gen.ts";
 import { writeFile } from "../utils/fs.ts";
+import { getSourceDate } from "../utils/source-date.ts";
 import { randomBytes } from "node:crypto";
 import { mkdir, readFile, rename, rm, stat } from "node:fs/promises";
 import { dirname } from "node:path";
@@ -64,8 +65,10 @@ export async function writeBuildInfo(
   const serverEntryName = resolveNitroServerEntry(nitro, output);
 
   const buildInfoPath = resolve(nitro.options.output.dir, "nitro.json");
+  const sourceDate = getSourceDate();
   const buildInfo: NitroBuildInfo = {
-    date: new Date().toJSON(),
+    date: (sourceDate ?? new Date()).toJSON(),
+    reproducible: sourceDate ? true : undefined,
     preset: nitro.options.preset,
     envName: nitro.options.envName,
     framework: nitro.options.framework,

@@ -4,6 +4,7 @@ import { glob } from "tinyglobby";
 import mime from "mime";
 import type { Nitro } from "nitro/types";
 import { resolve } from "pathe";
+import { getSourceDate } from "../../utils/source-date.ts";
 
 interface ResolvedAsset {
   fsPath: string;
@@ -29,6 +30,8 @@ export default function serverAssets(nitro: Nitro) {
           }`;
       }
 
+      const withMtime = !getSourceDate();
+
       // Scan all assets
       const assets: Record<string, ResolvedAsset> = {};
       for (const asset of nitro.options.serverAssets) {
@@ -47,7 +50,9 @@ export default function serverAssets(nitro: Nitro) {
             type += "; charset=utf-8";
           }
           const etag = createEtag(await fsp.readFile(fsPath));
-          const mtime = await fsp.stat(fsPath).then((s) => s.mtime.toJSON());
+          const mtime = withMtime
+            ? await fsp.stat(fsPath).then((s) => s.mtime.toJSON())
+            : undefined;
           assets[id].meta = { type, etag, mtime };
         }
       }

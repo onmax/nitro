@@ -131,6 +131,8 @@ export interface NitroFrameworkInfo {
  */
 export interface NitroBuildInfo {
   date: string;
+  /** `date` comes from `SOURCE_DATE_EPOCH`. */
+  reproducible?: boolean;
   preset: PresetName;
   envName?: string;
   framework: NitroFrameworkInfo;

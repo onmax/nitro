@@ -9,6 +9,7 @@ import { joinURL, withTrailingSlash } from "ufo";
 import { runParallel } from "../../utils/parallel.ts";
 import { getPrerenderMeta } from "../../prerender/_meta.ts";
 import { globPublicAssets } from "../assets.ts";
+import { getSourceDate } from "../../utils/source-date.ts";
 
 const readAssetHandler: Record<
   Exclude<Nitro["options"]["serveStatic"] | "true" | "false", boolean>,
@@ -48,6 +49,9 @@ export default function publicAssets(nitro: Nitro) {
           return `export default ${JSON.stringify(assets, null, 2)};`;
         }
 
+        // A fixed mtime would answer `If-Modified-Since` with 304 after a rollback
+        const withMtime = !getSourceDate();
+
         const files = await glob("**", {
           cwd: nitro.options.output.publicDir,
           absolute: false,
@@ -84,7 +88,7 @@ export default function publicAssets(nitro: Nitro) {
               type: getPrerenderMeta(nitro)[assetId]?.contentType || mimeType,
               encoding,
               etag,
-              mtime: stat.mtime.toJSON(),
+              mtime: withMtime ? stat.mtime.toJSON() : "",
               size: stat.size,
               path: relative(nitro.options.output.serverDir, fullPath),
               data:

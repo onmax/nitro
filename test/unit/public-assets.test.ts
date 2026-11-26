@@ -4,7 +4,7 @@ import { tmpdir } from "node:os";
 import { Readable } from "node:stream";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { dirname, join, normalize, resolve } from "pathe";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import type { Nitro } from "nitro/types";
 
 import publicAssets from "../../src/build/virtual/public-assets.ts";
@@ -271,6 +271,7 @@ describe("virtual/public-assets lookup", () => {
 describe("public assets manifest", () => {
   const tempDirs: string[] = [];
   afterEach(async () => {
+    vi.unstubAllEnvs();
     for (const dir of tempDirs.splice(0)) {
       await rm(dir, { recursive: true, force: true });
     }
@@ -300,5 +301,31 @@ describe("public assets manifest", () => {
     const keys = (code: string) =>
       Object.keys(JSON.parse(code.replace(/^export default |;$/g, "")));
     expect(keys(await template())).toEqual(names.map((name) => `/${name}`));
+  });
+
+  it("leaves mtime out when SOURCE_DATE_EPOCH is set", async () => {
+    const outDir = await mkdtemp(join(tmpdir(), "nitro-public-assets-"));
+    tempDirs.push(outDir);
+    const publicDir = join(outDir, "public");
+    await mkdir(publicDir, { recursive: true });
+    await writeFile(join(publicDir, "a.txt"), "a");
+    const nitro = {
+      options: {
+        dev: false,
+        baseURL: "/",
+        serveStatic: true,
+        publicAssets: [],
+        output: { publicDir, serverDir: join(outDir, "server") },
+      },
+    } as unknown as Nitro;
+    const template = publicAssets(nitro).find((t) => t.id === "#nitro/virtual/public-assets-data")!
+      .template as () => Promise<string>;
+    const asset = async () =>
+      JSON.parse((await template()).replace(/^export default |;$/g, ""))["/a.txt"];
+
+    vi.stubEnv("SOURCE_DATE_EPOCH", undefined);
+    expect((await asset()).mtime).not.toBe("");
+    vi.stubEnv("SOURCE_DATE_EPOCH", "1700000000");
+    expect((await asset()).mtime).toBe("");
   });
 });
